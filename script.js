@@ -67,7 +67,7 @@ function resizeCanvas() {
 }
 
 // calculate velocity based purely on the compressible flow equation (m² - 1)dv/v = da/a
-function calculateVelocity(x1, x2, y1, y2, V1) {
+function calculateVelocityChange(x1, x2, y1, y2, V1) {
     // Convert pixel coordinates to meters and calculate circular areas
     const y2_meters = pixelsToMeters(y2);
     const y2_next_meters = pixelsToMeters(bottomWall.getYAtX(x2));
@@ -89,7 +89,7 @@ function calculateVelocity(x1, x2, y1, y2, V1) {
     }
 
     const dV = -dA_A * V1 / one_minus_M1;
-    return V1 + dV * 0.05;
+    return dV;
 }
 
 // Spline class for wall generation
@@ -339,7 +339,7 @@ class Particle {
             const prevMach = this.speedX / soundSpeed;
 
             // Update speedX based on the compressible flow equation (in m/s)
-            this.speedX = calculateVelocity(this.x, this.x + lookAheadPixels, topY, bottomY, this.speedX);
+            this.speedX += calculateVelocityChange(this.x, this.x + lookAheadPixels, topY, bottomY, this.speedX) * timeScale;
 
             // Check for Mach transition
             const newMach = this.speedX / soundSpeed;
