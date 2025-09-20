@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Particle Animation</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/numeric/1.2.6/numeric.min.js"></script>
+</head>
+<body>
+    <div class="controls">
+        <div class="control-group">
+            <label for="soundSpeed">Speed of Sound (m/s): <span id="soundValue">343</span></label>
+            <input type="range" id="soundSpeed" min="100" max="1000" step="1" value="343">
+        </div>
+        <div class="control-group">
+            <label for="initialVelocity">Initial Velocity (m/s): <span id="velocityValue">100</span></label>
+            <input type="range" id="initialVelocity" min="50" max="500" step="10" value="100">
+        </div>
+        <div class="control-group">
+            <label for="timeScale">Time Scale (%): <span id="timeScaleValue">1</span></label>
+            <input type="range" id="timeScale" min="0.1" max="2" step="0.1" value="1">
+        </div>
+    </div>
+    <canvas id="particleCanvas"></canvas>
+    <script src="script.js"></script>
+</body>
+</html>
