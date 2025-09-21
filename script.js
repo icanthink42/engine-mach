@@ -66,8 +66,8 @@ function resizeCanvas() {
     }
 }
 
-// calculate velocity based purely on the compressible flow equation (m² - 1)dv/v = da/a
-function calculateVelocityChange(x1, x2, y1, y2, V1) {
+// calculate acceleration based on compressible flow equation (m² - 1)dv/v = da/a
+function calculateAcceleration(x1, x2, y1, y2, V1) {
     // Convert pixel coordinates to meters and calculate circular areas
     const y2_meters = pixelsToMeters(y2);
     const y2_next_meters = pixelsToMeters(bottomWall.getYAtX(x2));
@@ -83,13 +83,21 @@ function calculateVelocityChange(x1, x2, y1, y2, V1) {
     const M = V1 / soundSpeed;
     const one_minus_M1 = 1 - M * M;
 
-    // Near Mach 1, avoid division by zero
-    if (Math.abs(one_minus_M1) < 0.01) {
-        return initialVelocity;
+    if(one_minus_M1 < 0.001) {
+        return 0;
     }
 
-    const dV = -dA_A * V1 / one_minus_M1;
-    return dV;
+    // Calculate spatial derivative dv/dx
+    const dx = x2 - x1;
+    const dx_meters = pixelsToMeters(dx);
+
+    // Calculate acceleration directly from area change
+    // The compressible flow equation gives us dv/v = -da/a / (M² - 1)
+    // Multiply both sides by v to get dv = -v*da/a / (M² - 1)
+    // This is our acceleration when divided by dt, and dt = dx/v
+    const acceleration = -V1 * V1 * dA_A / (dx_meters * one_minus_M1); // m/s²
+
+    return acceleration;
 }
 
 // Spline class for wall generation
@@ -325,7 +333,10 @@ class Particle {
         }
     }
 
-    update() {
+    update(frameDelta) {
+        // Apply time scaling to the frame delta
+        const dt = frameDelta * timeScale;
+
         if (topWall && bottomWall) {
             const lookAheadMeters = 0.1; // Look ahead 10cm
             const lookAheadPixels = metersToPixels(lookAheadMeters);
@@ -338,8 +349,18 @@ class Particle {
             // Store previous Mach state
             const prevMach = this.speedX / soundSpeed;
 
-            // Update speedX based on the compressible flow equation (in m/s)
-            this.speedX += calculateVelocityChange(this.x, this.x + lookAheadPixels, topY, bottomY, this.speedX) * timeScale;
+            // Update speedX based on acceleration (in m/s²)
+            const acceleration = calculateAcceleration(this.x, this.x + lookAheadPixels, topY, bottomY, this.speedX);
+
+            // Semi-implicit Euler integration for better stability
+            // v = v0 + at, then dx = v*dt
+            const newSpeedX = this.speedX + acceleration * dt;
+            const avgSpeedX = (this.speedX + newSpeedX) * 0.5; // Average velocity for position update
+            this.speedX = newSpeedX;
+
+            // Convert velocity from m/s to pixels/frame using average velocity
+            const dxMeters = avgSpeedX * dt;
+            const dxPixels = metersToPixels(dxMeters);
 
             // Check for Mach transition
             const newMach = this.speedX / soundSpeed;
@@ -367,11 +388,6 @@ class Particle {
                 shockPoints.set(roundedX, updatedTransitions);
             }
 
-            // Convert velocity from m/s to pixels/frame
-            const dt = (1/60) * timeScale; // Scale time step by time scale factor
-            const dxMeters = this.speedX * dt;
-            const dxPixels = metersToPixels(dxMeters);
-
             // Record velocity for both walls
             topWall.recordVelocity(this.x, this.speedX);
             bottomWall.recordVelocity(this.x, this.speedX);
@@ -382,9 +398,8 @@ class Particle {
             // Update x position
             this.x += dxPixels;
         } else {
-            // If no walls, use default movement
-            const dt = (1/60) * timeScale;
-            const dxMeters = this.speedX * dt;
+            // If no walls, use default movement with constant velocity
+            const dxMeters = this.speedX * dt; // No acceleration, constant velocity
             const dxPixels = metersToPixels(dxMeters);
             this.x += dxPixels;
         }
@@ -423,16 +438,21 @@ function init() {
     // Create particle array
     let particles = [];
 
-    // Spawn rate control
+    // Time tracking
+    let lastFrameTime = 0;
     let lastSpawnTime = 0;
 
     // Animation loop
     function animate(timestamp) {
-        // Scale spawn interval inversely with time scale
-        const spawnInterval = SPAWN_INTERVAL / timeScale;
+        // Calculate actual frame time delta in seconds
+        const frameDelta = lastFrameTime ? (timestamp - lastFrameTime) / 1000 : 1/60;
+        lastFrameTime = timestamp;
+
+        // Scale spawn interval with time scale (slower time = fewer particles)
+        const spawnInterval = SPAWN_INTERVAL;
 
         // Spawn new particles at time-scaled rate
-        if (timestamp - lastSpawnTime > spawnInterval) {
+        if ((timestamp - lastSpawnTime) * timeScale > spawnInterval) {
             const p = new Particle();
             p.reset(); // Start from left side
             particles.push(p);
@@ -486,7 +506,7 @@ function init() {
 
         // Update particles and remove those that go off screen or are too slow
         particles = particles.filter(particle => {
-            particle.update();
+            particle.update(frameDelta);
             particle.draw();
             // Remove if off screen or velocity too low
             return particle.x <= canvas.width && Math.abs(particle.speedX) >= 0.001;
