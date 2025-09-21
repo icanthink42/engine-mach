@@ -30,14 +30,17 @@ function pixelsToMeters(pixels) {
 let soundSpeed = 343; // Default speed of sound in air at room temperature
 let initialVelocity = 100;
 let timeScale = 0.01; // Default 1% time scale (0.1% to 2% range)
+let pressureRatio = 0.5; // Default pressure ratio (outlet/inlet)
 
 // Get control elements
 const soundSpeedSlider = document.getElementById('soundSpeed');
 const velocitySlider = document.getElementById('initialVelocity');
 const timeScaleSlider = document.getElementById('timeScale');
+const pressureRatioSlider = document.getElementById('pressureRatio');
 const soundValue = document.getElementById('soundValue');
 const velocityValue = document.getElementById('velocityValue');
 const timeScaleValue = document.getElementById('timeScaleValue');
+const pressureValue = document.getElementById('pressureValue');
 
 // Update control values
 soundSpeedSlider.addEventListener('input', (e) => {
@@ -53,6 +56,11 @@ velocitySlider.addEventListener('input', (e) => {
 timeScaleSlider.addEventListener('input', (e) => {
     timeScale = parseFloat(e.target.value) / 100; // Convert percentage to decimal
     timeScaleValue.textContent = e.target.value;
+});
+
+pressureRatioSlider.addEventListener('input', (e) => {
+    pressureRatio = parseFloat(e.target.value);
+    pressureValue.textContent = pressureRatio.toFixed(1);
 });
 
 // Set canvas size to window size
@@ -84,7 +92,7 @@ function calculateAcceleration(x1, x2, y1, y2, V1) {
     const one_minus_M1 = 1 - M * M;
 
     if(Math.abs(one_minus_M1) < 0.05) {
-        return 100000;
+        return 10000 * (pressureRatio - 0.5) * 2; // Scale singularity acceleration by pressure ratio
     }
 
     // Calculate spatial derivative dv/dx
