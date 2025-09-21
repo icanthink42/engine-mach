@@ -324,7 +324,12 @@ class Particle {
     }
 
     setupVelocity() {
-        this.speedX = initialVelocity;
+        // Box-Muller transform for normal distribution
+        const u1 = Math.random();
+        const u2 = Math.random();
+        const standardNormal = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+        const spread = initialVelocity * 0.05; // 5% spread
+        this.speedX = initialVelocity + standardNormal * spread;
         this.opacity = Math.random() * 0.5 + 0.5;
         this.updateColor();
     }
