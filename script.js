@@ -344,7 +344,6 @@ class Particle {
             // Check for Mach transition
             const newMach = this.speedX / soundSpeed;
             if ((prevMach < 1 && newMach >= 1) || (prevMach >= 1 && newMach < 1)) {
-                console.log(`Mach transition at x=${this.x}, prevMach=${prevMach}, newMach=${newMach}`);
                 // Round x to nearest SHOCK_DISTANCE
                 const roundedX = Math.round(this.x / SHOCK_DISTANCE) * SHOCK_DISTANCE;
 
@@ -465,7 +464,6 @@ function init() {
             const subCount = transitions.filter(t => t.type === -1).length;
 
             // Draw shock if enough consistent transitions in either direction
-            console.log(`Shock point at x=${x}: super=${superCount}, sub=${subCount}`);
             if (superCount >= SHOCK_THRESHOLD || subCount >= SHOCK_THRESHOLD) {
                 const topY = topWall.getYAtX(x);
                 const bottomY = bottomWall.getYAtX(x);
