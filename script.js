@@ -83,8 +83,8 @@ function calculateAcceleration(x1, x2, y1, y2, V1) {
     const M = V1 / soundSpeed;
     const one_minus_M1 = 1 - M * M;
 
-    if(one_minus_M1 < 0.001) {
-        return 0;
+    if(Math.abs(one_minus_M1) < 0.05) {
+        return 100000;
     }
 
     // Calculate spatial derivative dv/dx
@@ -338,7 +338,7 @@ class Particle {
         const dt = frameDelta * timeScale;
 
         if (topWall && bottomWall) {
-            const lookAheadMeters = 0.1; // Look ahead 10cm
+            const lookAheadMeters = 0.01; // Look ahead 10cm
             const lookAheadPixels = metersToPixels(lookAheadMeters);
             const topY = topWall.getYAtX(this.x);
             const bottomY = bottomWall.getYAtX(this.x);
